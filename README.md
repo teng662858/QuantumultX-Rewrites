@@ -12,6 +12,14 @@ iPhone 上的 QuantumultX 重写脚本合集。主要用途：给那些**接口�
 | `scripts/91dj_m3u8.js` | 只盯播放列表 `/api/app/vid/h5/m3u8/...`，把 `路径 token + ?token=JWT&c=` 整条存下并通知 |
 | `scripts/91dj_store.js` | 一键导出已捕获内容（QX 里手动跑一次，整段复制） |
 
+## ⚠️ 关于 91短剧 / 91国产（重要）
+
+这个 App 做了 TLS 证书校验，**一旦被 MitM 解密就会报「APP线路检测失败 / 选线失败」**，只剩 21 秒预览。
+实测：只要 MitM 里出现它的接口域名，App 就废；把它们从 MitM 移除，App 立刻恢复正常。
+所以这台 App **不要开 MitM**，抓包改走模拟器（雷电 9 + root 内存 dump），已跑通：
+playlist token → m3u8 → 分片 → /api/app/vid/sec 密钥 → AES-128-CBC/IV=0 → 合法 MPEG-TS。
+仓库里的脚本留作通用模板，给没有证书校验的 App 使用。
+
 ## 用法 A（推荐）：远程资源引用
 
 QX 配置文件里加一行，脚本和规则都在 GitHub 上，改脚本不用重装配置：
