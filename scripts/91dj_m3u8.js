@@ -1,15 +1,40 @@
-// 91短剧 / 91国产 —— 播放列表捕获（只记录，不修改任何东西）
-// 目标请求：GET /api/app/vid/h5/m3u8/<key>/<line>/<pathToken>.m3u8?token=<JWT>&c=<分片源>
+// 91短剧 / 91国产 —— 播放列表捕获（只记录，不改动任何东西）
+// 目标：GET /api/app/vid/h5/m3u8/<key>/<line>/<pathToken>.m3u8?token=<JWT>&c=<分片源>
 //
-// 重要：这是 script-request-header 脚本，必须原样放行请求（返回 headers），
-// 返回空对象会把请求搞坏 → App 报「选线失败 / 线路检测失败」。
+// 注意：QX 的持久化对象是 $prefs（$persistentStore 在 QX 里不存在，会抛异常让重写失效）。
 
 const KEY = 'qx91_play_v1';
 const MAX = 80;
 const TAG = '[91DJ-PLAY]';
 
+function storeRead(key) {
+  try {
+    if (typeof $prefs !== 'undefined' && $prefs.valueForKey) return $prefs.valueForKey(key);
+    if (typeof $persistentStore !== 'undefined' && $persistentStore.read) return $persistentStore.read(key);
+  } catch (error) {}
+  return null;
+}
+
+function storeWrite(value, key) {
+  try {
+    if (typeof $prefs !== 'undefined' && $prefs.setValueForKey) {
+      $prefs.setValueForKey(value, key);
+      return;
+    }
+    if (typeof $persistentStore !== 'undefined' && $persistentStore.write) {
+      $persistentStore.write(value, key);
+    }
+  } catch (error) {}
+}
+
+function notify(title, subtitle, message) {
+  try {
+    if (typeof $notify === 'function') $notify(title, subtitle, message);
+  } catch (error) {}
+}
+
 function readList() {
-  const raw = $persistentStore.read(KEY);
+  const raw = storeRead(KEY);
   if (!raw) return [];
   try {
     const list = JSON.parse(raw);
@@ -35,13 +60,13 @@ if (match) {
   };
   list.push(record);
   while (list.length > MAX) list.shift();
-  $persistentStore.write(JSON.stringify(list), KEY);
+  storeWrite(JSON.stringify(list), KEY);
 
   console.log(TAG + ' [' + record.n + '] key=' + record.key + ' line=' + record.line);
   console.log(TAG + ' pathToken=' + record.pathToken);
   console.log(TAG + ' query=' + record.query);
   console.log(TAG + ' full=' + url);
-  $notify(TAG, record.key + ' / ' + record.line, '第 ' + record.n + ' 条已保存');
+  notify(TAG, record.key + ' / ' + record.line, '第 ' + record.n + ' 条已保存');
 } else {
   console.log(TAG + ' 未识别的播放列表请求: ' + url.slice(0, 160));
 }

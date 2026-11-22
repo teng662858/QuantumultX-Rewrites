@@ -1,11 +1,19 @@
-// 导出已捕获的数据：在 QX 里用「手动执行脚本」跑一次，整段复制给我即可。
-// 也可以在任意一个命中规则里临时把脚本换成它。
+// 导出已捕获数据：在 QX 里手动跑一次（或挂到 task_local），日志里整段复制给开发者。
+// QX 的持久化对象是 $prefs。
 
 const PLAY = 'qx91_play_v1';
 const LOG = 'qx91_log_v1';
 
+function storeRead(key) {
+  try {
+    if (typeof $prefs !== 'undefined' && $prefs.valueForKey) return $prefs.valueForKey(key);
+    if (typeof $persistentStore !== 'undefined' && $persistentStore.read) return $persistentStore.read(key);
+  } catch (error) {}
+  return null;
+}
+
 function parse(key) {
-  const raw = $persistentStore.read(key);
+  const raw = storeRead(key);
   if (!raw) return [];
   try {
     const list = JSON.parse(raw);
@@ -30,5 +38,9 @@ logs.forEach((item) => {
 });
 
 console.log(text);
-$notify('QX 导出', '播放列表 ' + plays.length + ' 条 / 接口 ' + logs.length + ' 条', '日志里可整段复制');
+try {
+  if (typeof $notify === 'function') {
+    $notify('QX 导出', '播放列表 ' + plays.length + ' 条 / 接口 ' + logs.length + ' 条', '日志里可整段复制');
+  }
+} catch (error) {}
 $done({});
